@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP8266 Router</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📶</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📶 ESP8266 NAT Router</h1>
+            <div id="status-badge" class="badge offline">Offline</div>
+        </header>
+
+        <nav>
+            <button class="tab active" data-tab="dashboard">Dashboard</button>
+            <button class="tab" data-tab="wifi">WiFi Config</button>
+            <button class="tab" data-tab="clients">Clients</button>
+            <button class="tab" data-tab="firewall">Firewall</button>
+            <button class="tab" data-tab="portforward">Port Forward</button>
+            <button class="tab" data-tab="advanced">Advanced</button>
+        </nav>
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="panel active">
+            <h2>System Dashboard</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Upstream (STA)</h3>
+                    <div class="stat-row">
+                        <span>Status</span>
+                        <span id="sta-status" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>SSID</span>
+                        <span id="sta-ssid" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>IP</span>
+                        <span id="sta-ip" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Signal</span>
+                        <span id="sta-rssi" class="val">—</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Access Point</h3>
+                    <div class="stat-row">
+                        <span>SSID</span>
+                        <span id="ap-ssid" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>IP</span>
+                        <span id="ap-ip" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Clients</span>
+                        <span id="ap-clients" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Channel</span>
+                        <span id="ap-channel" class="val">—</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>System</h3>
+                    <div class="stat-row">
+                        <span>NAT</span>
+                        <span id="nat-status" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Uptime</span>
+                        <span id="uptime" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Free Memory</span>
+                        <span id="heap" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Firmware</span>
+                        <span id="version" class="val">—</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Traffic</h3>
+                    <div class="stat-row">
+                        <span>Throughput</span>
+                        <span id="throughput" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>FW Allowed</span>
+                        <span id="fw-allowed" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>FW Denied</span>
+                        <span id="fw-denied" class="val">—</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Mesh Peers</span>
+                        <span id="mesh-peers" class="val">—</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WiFi Config -->
+        <section id="wifi" class="panel">
+            <h2>WiFi Configuration</h2>
+            <div class="card">
+                <h3>Upstream Network (STA)</h3>
+                <div class="form-group">
+                    <label>SSID</label>
+                    <div class="input-row">
+                        <input type="text" id="cfg-sta-ssid" placeholder="Upstream SSID">
+                        <button onclick="scanNetworks()" class="btn-sm">🔍 Scan</button>
+                    </div>
+                </div>
+                <div id="scan-results" class="scan-results hidden"></div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="cfg-sta-pass" placeholder="Upstream Password">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Local Access Point</h3>
+                <div class="form-group">
+                    <label>SSID</label>
+                    <input type="text" id="cfg-ap-ssid" placeholder="AP SSID">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="cfg-ap-pass" placeholder="AP Password (min 8 chars)">
+                </div>
+                <div class="form-group">
+                    <label>Channel (1-13)</label>
+                    <input type="number" id="cfg-ap-channel" min="1" max="13" value="6">
+                </div>
+                <div class="form-group">
+                    <label>Max Clients</label>
+                    <input type="number" id="cfg-ap-max" min="1" max="8" value="8">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>DNS</h3>
+                <div class="form-group">
+                    <label>Primary DNS</label>
+                    <input type="text" id="cfg-dns1" placeholder="8.8.8.8">
+                </div>
+                <div class="form-group">
+                    <label>Secondary DNS</label>
+                    <input type="text" id="cfg-dns2" placeholder="8.8.4.4">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button onclick="saveConfig()" class="btn-primary">💾 Save Configuration</button>
+                <button onclick="rebootDevice()" class="btn-danger">🔄 Reboot to Apply</button>
+            </div>
+        </section>
+
+        <!-- Clients -->
+        <section id="clients" class="panel">
+            <h2>Connected Clients</h2>
+            <div class="card">
+                <div id="clients-list">
+                    <p>Loading...</p>
+                </div>
+                <button onclick="loadClients()" class="btn-sm">🔄 Refresh</button>
+            </div>
+        </section>
+
+        <!-- Firewall -->
+        <section id="firewall" class="panel">
+            <h2>Firewall ACL Rules</h2>
+            <div class="card">
+                <div id="acl-list">
+                    <p>Loading...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Add Rule</h3>
+                <div class="form-row">
+                    <select id="acl-proto">
+                        <option value="0">Any</option>
+                        <option value="6">TCP</option>
+                        <option value="17">UDP</option>
+                    </select>
+                    <input type="text" id="acl-src" placeholder="Source IP (* for any)">
+                    <input type="text" id="acl-dst" placeholder="Dest IP (* for any)">
+                    <select id="acl-action">
+                        <option value="allow">Allow</option>
+                        <option value="deny">Deny</option>
+                    </select>
+                    <input type="text" id="acl-desc" placeholder="Description">
+                    <button onclick="addACLRule()" class="btn-primary">Add</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Port Forward -->
+        <section id="portforward" class="panel">
+            <h2>Port Forwarding</h2>
+            <div class="card">
+                <div id="pf-list">
+                    <p>Loading...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Add Port Forward</h3>
+                <div class="form-row">
+                    <select id="pf-proto">
+                        <option value="tcp">TCP</option>
+                        <option value="udp">UDP</option>
+                    </select>
+                    <input type="number" id="pf-ext-port" placeholder="External Port">
+                    <input type="text" id="pf-int-ip" placeholder="Internal IP">
+                    <input type="number" id="pf-int-port" placeholder="Internal Port">
+                    <input type="text" id="pf-desc" placeholder="Description">
+                    <button onclick="addPortForward()" class="btn-primary">Add</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Advanced -->
+        <section id="advanced" class="panel">
+            <h2>Advanced Settings</h2>
+
+            <div class="card">
+                <h3>Traffic Shaping</h3>
+                <div class="form-group">
+                    <label>Global Bandwidth Limit (kbps, 0 = unlimited)</label>
+                    <input type="number" id="cfg-bw-limit" min="0" value="0">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>MQTT Status Reporting</h3>
+                <div class="form-group">
+                    <label><input type="checkbox" id="cfg-mqtt-enabled"> Enable MQTT</label>
+                </div>
+                <div class="form-group">
+                    <label>Server</label>
+                    <input type="text" id="cfg-mqtt-server" placeholder="mqtt.example.com">
+                </div>
+                <div class="form-group">
+                    <label>Port</label>
+                    <input type="number" id="cfg-mqtt-port" value="1883">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Automesh</h3>
+                <div class="form-group">
+                    <label><input type="checkbox" id="cfg-automesh"> Enable Automesh</label>
+                </div>
+                <p class="hint">Automesh allows multiple ESP units to automatically form a mesh network, extending range across multiple hops.</p>
+            </div>
+
+            <div class="card">
+                <h3>System</h3>
+                <div class="form-group">
+                    <label>Hostname</label>
+                    <input type="text" id="cfg-hostname" placeholder="esp-router">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button onclick="saveConfig()" class="btn-primary">💾 Save All Settings</button>
+                <button onclick="rebootDevice()" class="btn-danger">🔄 Reboot</button>
+            </div>
+        </section>
+
+        <footer>
+            <span>ESP8266 NAT Router v<span id="footer-version">1.0.0</span></span>
+            <span>Chip: <span id="footer-chip">—</span></span>
+        </footer>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
